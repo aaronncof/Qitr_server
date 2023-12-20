@@ -1,0 +1,31 @@
+image: tcmxjonathan/dimg-001
+
+stages:
+  - tf
+  - tf_destroy
+
+before_script:
+  - export TF_VAR_tc_support_password="$tc_support_password"
+  - export MS_NAME=$(basename $CI_PROJECT_NAMESPACE)
+
+deploy-infrastructure:
+  stage: tf
+  script:
+    - terraform init -backend-config="key=env:/test/totaldeploy/quiter/$MS_NAME/$CI_COMMIT_BRANCH/terraform.tfstate"
+    - terraform get -update
+    - terraform init -backend-config="key=env:/test/totaldeploy/quiter/$MS_NAME/$CI_COMMIT_BRANCH/terraform.tfstate"
+    - terraform apply  -var-file="vars.testing.tfvars" --auto-approve
+  when: manual
+  only:
+    - test
+
+tf-destroy:
+  stage: tf_destroy
+  script:
+    - echo "Destroying resources"
+    - terraform init -backend-config="key=env:/test/totaldeploy/quiter/$MS_NAME/$CI_COMMIT_BRANCH/terraform.tfstate"
+    - terraform destroy -var-file="vars.testing.tfvars" --auto-approve
+  when: manual
+  only:
+    - test
+    - main
